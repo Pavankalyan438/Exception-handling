@@ -1,17 +1,20 @@
 package com.example.Exception_Training.controller;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,17 +34,40 @@ public class CriketersController {
 	public CricketersServiceImp cricketersServiceImp;
 	@Autowired
 	public CricketersRepository cricketersRepository;
+	
+	
+	@GetMapping(path = "/cricketer/{id}")
+	@Cacheable(cacheNames = "cricketer", key = "#id")
+	public ResponseEntity<Cricketers> getCricketerById(@PathVariable int id) {
+		Cricketers cricketers = cricketersServiceImp.findById(id);
+		return ResponseEntity.status(HttpStatus.OK).body(cricketers);
 
+	}
+	
+	@PostMapping(path = "/post")
+	public Cricketers helloWorld(@RequestBody Cricketers cricketers) {
+		System.out.println(cricketers.toString());
+		return cricketersServiceImp.saveCricketer(cricketers);
+
+	}
+	
+	@PutMapping(path = "updateCricketer")
+	@CachePut(cacheNames = "cricketer", key = "#cricketers.id")
+	public ResponseEntity<Cricketers> updateCricketerById(@RequestBody Cricketers cricketers) {
+		cricketersServiceImp.updateCricketer(cricketers);
+		return ResponseEntity.status(HttpStatus.OK).body(cricketers);
+
+	}
+	@Scheduled(fixedRate = 60000) // Every 60 seconds
+	@CacheEvict(cacheNames = "cricketer", allEntries = true)
+	public void refreshCricketerCache() {
+	    // Clears all cache entries for cricketer
+		System.out.println("Clearing the caches in the interval of 60 Seconds");
+	}
+	
 	@GetMapping(path = "/firstname")
 	public ResponseEntity<Cricketers> findById(@RequestParam int id) {
 		Cricketers cricketers = cricketersServiceImp.findById(id);
-		/*
-		 * try {
-		 * 
-		 * cricketers = cricketersServiceImp.findById(id); }catch (Exception e) {
-		 * //return ResponseEntity.status(HttpStatus.OK).body(cricketers);
-		 * System.out.println("errrr:"+ e.getMessage()); }
-		 */
 		return ResponseEntity.status(HttpStatus.OK).body(cricketers);
 
 	}
@@ -53,12 +79,8 @@ public class CriketersController {
 
 	}
 
-	@PostMapping(path = "/post")
-	public Cricketers helloWorld(@RequestBody Cricketers cricketers) {
-System.out.println(cricketers.toString());
-		return cricketersServiceImp.saveCricketer(cricketers);
-
-	}
+	
+	
 
 	/*
 	 * @ExceptionHandler(value = NoSuchCricketerException.class)
@@ -82,9 +104,5 @@ System.out.println(cricketers.toString());
 
 		return new ResponseEntity<List<Cricketers>>(cricketersServiceImp.findByPage(pageId, pageSize), HttpStatus.OK);
 	}
-	@Bean
-	public Function<Cricketers, Cricketers> knowCricketer()
-	{
-		return cricketer->cricketer;
-	}
+
 }

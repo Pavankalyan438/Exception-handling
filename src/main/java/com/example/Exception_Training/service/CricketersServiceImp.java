@@ -56,4 +56,12 @@ public class CricketersServiceImp {
 		System.out.println(allCricketrs);
 		return allCricketrs.toList();
 	}
+
+	public String updateCricketer(Cricketers cricketers) {
+		
+		cricketersRepository.updateCricketer(cricketers.getId(), cricketers.getSalary());
+		return "Updated Succesfully";
+	}
+
+	
 }
